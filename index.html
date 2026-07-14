@@ -5,27 +5,21 @@
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
   <style>
-    #scanning { display: flex; align-items: center; justify-content: center; position: absolute; left: 0; right: 0; top: 0; bottom: 0; background: transparent; z-index: 2; }
-    #scanning .inner { border: 2px solid white; width: 200px; height: 200px; background: rgba(255,255,255,0.2); }
+    #ui { position: absolute; top: 10px; left: 10px; z-index: 10; background: rgba(0,0,0,0.7); color: white; padding: 15px; border-radius: 10px; font-family: sans-serif; }
   </style>
 </head>
 <body>
-  
-  <div id="scanning">
-    <div class="inner"><span>Suche Marker...</span></div>
+
+  <!-- Overlay für die Anzeige der Mondphase -->
+  <div id="ui">
+    <h2 id="phase-status">Ordne Sonne, Erde und Mond an!</h2>
+    <p id="debug">Abstand Erde-Mond: --</p>
   </div>
 
   <a-scene 
-    mindar-image="imageTargetSrc: ./assets/marker/targets.mind; uiScanning: #scanning;" 
-    color-space="sRGB" 
-    renderer="colorManagement: true" 
-    vr-mode-ui="enabled: false" 
-    device-orientation-permission-ui="enabled: false">
+    mindar-image="imageTargetSrc: ./assets/marker/targets.mind; maxTrack: 3; uiScanning: #scanning;" 
+    color-space="sRGB" renderer="colorManagement: true" vr-mode-ui="enabled: false">
     
-    <!-- Lichtquellen für die 3D Modelle -->
-    <a-light type="ambient" intensity="1.0"></a-light>
-    <a-light type="directional" position="1 1 1" intensity="1.0"></a-light>
-
     <a-assets>
       <a-asset-item id="sun" src="./assets/glb/sun.glb"></a-asset-item>
       <a-asset-item id="earth" src="./assets/glb/earth.glb"></a-asset-item>
@@ -34,21 +28,51 @@
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <!-- Marker 0: Sonne -->
-    <a-entity mindar-image-target="targetIndex: 0">
-      <a-gltf-model src="#sun" scale="2 2 2" position="0 0 0"></a-gltf-model>
+    <!-- Entitys mit ID für die JavaScript-Berechnung -->
+    <a-entity id="sun-entity" mindar-image-target="targetIndex: 0">
+      <a-gltf-model src="#sun" scale="1 1 1"></a-gltf-model>
     </a-entity>
 
-    <!-- Marker 1: Erde -->
-    <a-entity mindar-image-target="targetIndex: 1">
-      <a-gltf-model src="#earth" scale="2 2 2" position="0 0 0"></a-gltf-model>
+    <a-entity id="earth-entity" mindar-image-target="targetIndex: 1">
+      <a-gltf-model src="#earth" scale="1 1 1" animation="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear"></a-gltf-model>
     </a-entity>
 
-    <!-- Marker 2: Mond -->
-    <a-entity mindar-image-target="targetIndex: 2">
-      <a-gltf-model src="#moon" scale="2 2 2" position="0 0 0"></a-gltf-model>
+    <a-entity id="moon-entity" mindar-image-target="targetIndex: 2">
+      <a-gltf-model src="#moon" scale="0.5 0.5 0.5"></a-gltf-model>
     </a-entity>
     
   </a-scene>
+
+  <script>
+    const earth = document.querySelector('#earth-entity');
+    const moon = document.querySelector('#moon-entity');
+    const statusText = document.getElementById('phase-status');
+    const debugText = document.getElementById('debug');
+
+    // Berechne Distanz zwischen Erde und Mond
+    function updatePhases() {
+      if (earth.object3D.visible && moon.object3D.visible) {
+        const posE = earth.object3D.position;
+        const posM = moon.object3D.position;
+        const distance = posE.distanceTo(posM);
+        
+        debugText.innerText = "Abstand: " + distance.toFixed(2);
+
+        // Logik für Mondphasen basierend auf Distanz
+        if (distance < 0.2) {
+          statusText.innerText = "Neumond (Mond steht zwischen Erde und Sonne)";
+        } else if (distance > 0.5) {
+          statusText.innerText = "Vollmond (Gegenüberliegende Position)";
+        } else {
+          statusText.innerText = "Zunehmender/Abnehmender Mond";
+        }
+      } else {
+        statusText.innerText = "Bitte alle Marker (Sonne, Erde, Mond) scannen!";
+      }
+    }
+
+    // Prüfe alle 500ms
+    setInterval(updatePhases, 500);
+  </script>
 </body>
 </html>
