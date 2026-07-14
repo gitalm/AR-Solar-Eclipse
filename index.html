@@ -5,28 +5,21 @@
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
   <style>
-    #debug-overlay { 
-      position: fixed; top: 10px; left: 10px; z-index: 100; 
-      background: rgba(0,0,0,0.8); color: #00FF00; padding: 15px; 
-      font-family: monospace; font-size: 12px; pointer-events: none;
-      border: 1px solid #00FF00;
-    }
+    body { margin: 0; }
+    #debug { position: absolute; top: 10px; left: 10px; color: yellow; background: rgba(0,0,0,0.5); font-family: monospace; }
   </style>
 </head>
 <body>
 
-  <div id="debug-overlay">
-    <div id="status">System initialisiert...</div>
-    <div id="tracker-log">Warte auf Marker...</div>
-  </div>
+  <div id="debug">System bereit...</div>
 
   <a-scene 
-    id="scene"
     mindar-image="imageTargetSrc: ./assets/marker/targets.mind; maxTrack: 3;" 
-    renderer="colorManagement: true" 
-    vr-mode-ui="enabled: false">
+    color-space="sRGB" renderer="colorManagement: true" 
+    vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
     
     <a-assets>
+      <!-- Achte hier penibel auf die exakte Schreibweise deiner Dateinamen -->
       <a-asset-item id="sun" src="./assets/glb/sun.glb"></a-asset-item>
       <a-asset-item id="earth" src="./assets/glb/earth.glb"></a-asset-item>
       <a-asset-item id="moon" src="./assets/glb/moon.glb"></a-asset-item>
@@ -34,44 +27,41 @@
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <a-entity id="sun-entity" mindar-image-target="targetIndex: 0"></a-entity>
-    <a-entity id="earth-entity" mindar-image-target="targetIndex: 1"></a-entity>
-    <a-entity id="moon-entity" mindar-image-target="targetIndex: 2"></a-entity>
+    <!-- Lichtquellen damit die Modelle sichtbar sind -->
+    <a-light type="ambient" intensity="1.5"></a-light>
+    <a-light type="directional" position="0 1 0" intensity="2.0"></a-light>
+
+    <!-- Marker 0: Sonne -->
+    <a-entity mindar-image-target="targetIndex: 0">
+      <a-gltf-model src="#sun" scale="0.5 0.5 0.5" position="0 0 0"></a-gltf-model>
+    </a-entity>
+
+    <!-- Marker 1: Erde -->
+    <a-entity mindar-image-target="targetIndex: 1">
+      <a-gltf-model src="#earth" scale="0.5 0.5 0.5" position="0 0 0" 
+                    animation="property: rotation; to: 0 360 0; loop: true; dur: 5000; easing: linear">
+      </a-gltf-model>
+    </a-entity>
+
+    <!-- Marker 2: Mond -->
+    <a-entity mindar-image-target="targetIndex: 2">
+      <a-gltf-model src="#moon" scale="0.5 0.5 0.5" position="0 0 0"></a-gltf-model>
+    </a-entity>
     
   </a-scene>
 
   <script>
-    const scene = document.querySelector('#scene');
-    const statusDiv = document.getElementById('status');
-    const logDiv = document.getElementById('tracker-log');
+    // Debug-Log für Erkennung
+    const scene = document.querySelector('a-scene');
+    const debug = document.getElementById('debug');
 
-    // 1. Überwachung von Ladefehlern (Assets)
-    document.querySelectorAll('a-asset-item').forEach(el => {
-      el.addEventListener('error', (e) => {
-        statusDiv.innerHTML = "<span style='color:red;'>LADEFEHLER: " + el.id + "</span>";
-        console.error("Asset Load Error:", el.src);
-      });
+    scene.addEventListener("targetFound", (e) => {
+      debug.innerText = "Gefunden: Index " + e.detail.index;
     });
 
-    // 2. Tracking-Logik
-    const targets = ["Sonne", "Erde", "Mond"];
-    const entities = ['#sun-entity', '#earth-entity', '#moon-entity'];
-
-    entities.forEach((id, index) => {
-      const entity = document.querySelector(id);
-      
-      entity.addEventListener("targetFound", () => {
-        logDiv.innerHTML += "<div>✅ Gefunden: " + targets[index] + "</div>";
-        console.log(targets[index] + " wurde erkannt.");
-      });
-
-      entity.addEventListener("targetLost", () => {
-        logDiv.innerHTML = logDiv.innerHTML.replace("<div>✅ Gefunden: " + targets[index] + "</div>", "");
-        console.log(targets[index] + " verloren.");
-      });
+    scene.addEventListener("targetLost", () => {
+      debug.innerText = "Suche...";
     });
-
-    statusDiv.innerText = "System bereit. Scanne Marker...";
   </script>
 </body>
 </html>
