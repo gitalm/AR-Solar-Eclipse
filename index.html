@@ -4,32 +4,49 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+  <style>
+    #scanning { display: flex; align-items: center; justify-content: center; position: absolute; left: 0; right: 0; top: 0; bottom: 0; background: transparent; z-index: 2; }
+    #scanning .inner { border: 2px solid white; width: 200px; height: 200px; background: rgba(255,255,255,0.2); }
+  </style>
 </head>
 <body>
-  <a-scene mindar-image="imageTargetSrc: ./assets/marker/targets.mind; uiScanning: #scanning;" color-space="sRGB" renderer="colorManagement: true" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+  
+  <div id="scanning">
+    <div class="inner"><span>Suche Marker...</span></div>
+  </div>
+
+  <a-scene 
+    mindar-image="imageTargetSrc: ./assets/marker/targets.mind; uiScanning: #scanning;" 
+    color-space="sRGB" 
+    renderer="colorManagement: true" 
+    vr-mode-ui="enabled: false" 
+    device-orientation-permission-ui="enabled: false">
     
-    <!-- Deine Assets laden -->
+    <!-- Lichtquellen für die 3D Modelle -->
+    <a-light type="ambient" intensity="1.0"></a-light>
+    <a-light type="directional" position="1 1 1" intensity="1.0"></a-light>
+
     <a-assets>
-      <a-asset-item id="sun" src="./assets/glb/Sun.glb"></a-asset-item>
-      <a-asset-item id="earth" src="./assets/glb/Earth.glb"></a-asset-item>
-      <a-asset-item id="moon" src="./assets/glb/Moon.glb"></a-asset-item>
+      <a-asset-item id="sun" src="./assets/glb/sun.glb"></a-asset-item>
+      <a-asset-item id="earth" src="./assets/glb/earth.glb"></a-asset-item>
+      <a-asset-item id="moon" src="./assets/glb/moon.glb"></a-asset-item>
     </a-assets>
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <!-- Marker 0 (Sonne) -->
+    <!-- Marker 0: Sonne -->
     <a-entity mindar-image-target="targetIndex: 0">
-      <a-gltf-model src="#sun" scale="0.5 0.5 0.5"></a-gltf-model>
+      <a-gltf-model src="#sun" scale="2 2 2" position="0 0 0"></a-gltf-model>
     </a-entity>
 
-    <!-- Marker 1 (Erde) -->
+    <!-- Marker 1: Erde -->
     <a-entity mindar-image-target="targetIndex: 1">
-      <a-gltf-model src="#earth" scale="0.5 0.5 0.5"></a-gltf-model>
+      <a-gltf-model src="#earth" scale="2 2 2" position="0 0 0"></a-gltf-model>
     </a-entity>
 
-    <!-- Marker 2 (Mond) -->
+    <!-- Marker 2: Mond -->
     <a-entity mindar-image-target="targetIndex: 2">
-      <a-gltf-model src="#moon" scale="0.5 0.5 0.5"></a-gltf-model>
+      <a-gltf-model src="#moon" scale="2 2 2" position="0 0 0"></a-gltf-model>
     </a-entity>
     
   </a-scene>
