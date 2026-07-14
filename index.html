@@ -5,20 +5,26 @@
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
   <style>
-    #ui { position: absolute; top: 10px; left: 10px; z-index: 10; background: rgba(0,0,0,0.7); color: white; padding: 15px; border-radius: 10px; font-family: sans-serif; }
+    #debug-overlay { 
+      position: fixed; top: 10px; left: 10px; z-index: 100; 
+      background: rgba(0,0,0,0.8); color: #00FF00; padding: 15px; 
+      font-family: monospace; font-size: 12px; pointer-events: none;
+      border: 1px solid #00FF00;
+    }
   </style>
 </head>
 <body>
 
-  <!-- Overlay für die Anzeige der Mondphase -->
-  <div id="ui">
-    <h2 id="phase-status">Ordne Sonne, Erde und Mond an!</h2>
-    <p id="debug">Abstand Erde-Mond: --</p>
+  <div id="debug-overlay">
+    <div id="status">System initialisiert...</div>
+    <div id="tracker-log">Warte auf Marker...</div>
   </div>
 
   <a-scene 
-    mindar-image="imageTargetSrc: ./assets/marker/targets.mind; maxTrack: 3; uiScanning: #scanning;" 
-    color-space="sRGB" renderer="colorManagement: true" vr-mode-ui="enabled: false">
+    id="scene"
+    mindar-image="imageTargetSrc: ./assets/marker/targets.mind; maxTrack: 3;" 
+    renderer="colorManagement: true" 
+    vr-mode-ui="enabled: false">
     
     <a-assets>
       <a-asset-item id="sun" src="./assets/glb/sun.glb"></a-asset-item>
@@ -28,51 +34,44 @@
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <!-- Entitys mit ID für die JavaScript-Berechnung -->
-    <a-entity id="sun-entity" mindar-image-target="targetIndex: 0">
-      <a-gltf-model src="#sun" scale="1 1 1"></a-gltf-model>
-    </a-entity>
-
-    <a-entity id="earth-entity" mindar-image-target="targetIndex: 1">
-      <a-gltf-model src="#earth" scale="1 1 1" animation="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear"></a-gltf-model>
-    </a-entity>
-
-    <a-entity id="moon-entity" mindar-image-target="targetIndex: 2">
-      <a-gltf-model src="#moon" scale="0.5 0.5 0.5"></a-gltf-model>
-    </a-entity>
+    <a-entity id="sun-entity" mindar-image-target="targetIndex: 0"></a-entity>
+    <a-entity id="earth-entity" mindar-image-target="targetIndex: 1"></a-entity>
+    <a-entity id="moon-entity" mindar-image-target="targetIndex: 2"></a-entity>
     
   </a-scene>
 
   <script>
-    const earth = document.querySelector('#earth-entity');
-    const moon = document.querySelector('#moon-entity');
-    const statusText = document.getElementById('phase-status');
-    const debugText = document.getElementById('debug');
+    const scene = document.querySelector('#scene');
+    const statusDiv = document.getElementById('status');
+    const logDiv = document.getElementById('tracker-log');
 
-    // Berechne Distanz zwischen Erde und Mond
-    function updatePhases() {
-      if (earth.object3D.visible && moon.object3D.visible) {
-        const posE = earth.object3D.position;
-        const posM = moon.object3D.position;
-        const distance = posE.distanceTo(posM);
-        
-        debugText.innerText = "Abstand: " + distance.toFixed(2);
+    // 1. Überwachung von Ladefehlern (Assets)
+    document.querySelectorAll('a-asset-item').forEach(el => {
+      el.addEventListener('error', (e) => {
+        statusDiv.innerHTML = "<span style='color:red;'>LADEFEHLER: " + el.id + "</span>";
+        console.error("Asset Load Error:", el.src);
+      });
+    });
 
-        // Logik für Mondphasen basierend auf Distanz
-        if (distance < 0.2) {
-          statusText.innerText = "Neumond (Mond steht zwischen Erde und Sonne)";
-        } else if (distance > 0.5) {
-          statusText.innerText = "Vollmond (Gegenüberliegende Position)";
-        } else {
-          statusText.innerText = "Zunehmender/Abnehmender Mond";
-        }
-      } else {
-        statusText.innerText = "Bitte alle Marker (Sonne, Erde, Mond) scannen!";
-      }
-    }
+    // 2. Tracking-Logik
+    const targets = ["Sonne", "Erde", "Mond"];
+    const entities = ['#sun-entity', '#earth-entity', '#moon-entity'];
 
-    // Prüfe alle 500ms
-    setInterval(updatePhases, 500);
+    entities.forEach((id, index) => {
+      const entity = document.querySelector(id);
+      
+      entity.addEventListener("targetFound", () => {
+        logDiv.innerHTML += "<div>✅ Gefunden: " + targets[index] + "</div>";
+        console.log(targets[index] + " wurde erkannt.");
+      });
+
+      entity.addEventListener("targetLost", () => {
+        logDiv.innerHTML = logDiv.innerHTML.replace("<div>✅ Gefunden: " + targets[index] + "</div>", "");
+        console.log(targets[index] + " verloren.");
+      });
+    });
+
+    statusDiv.innerText = "System bereit. Scanne Marker...";
   </script>
 </body>
 </html>
